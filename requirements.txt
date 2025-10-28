@@ -9,8 +9,8 @@ pydantic>=2
 numpy
 pandas
 
-# technicals (no git): tarball works without GitHub auth
-pandas-ta @ https://github.com/twopirllc/pandas-ta/archive/refs/tags/0.3.14b.tar.gz
+# technicals (PyPI-hosted)
+pandas-ta==0.3.14b0
 
 # config
 PyYAML
