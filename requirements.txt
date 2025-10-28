@@ -9,9 +9,9 @@ python-dotenv==1.0.1
 # Data Processing & Analysis
 numpy==1.26.4
 pandas==2.2.2
-# pandas-ta 0.3.14b is the last stable release compatible with Python 3.11
-# The previously pinned 0.3.14b0 does not exist on PyPI and breaks builds
-pandas-ta==0.3.14b
+# pandas-ta: install from GitHub to avoid PyPI resolution issues on Render
+# Provides import "pandas_ta" while ensuring compatibility with Python 3.11
+pandas-ta @ git+https://github.com/twopirllc/pandas-ta.git@development
 scikit-learn==1.5.2
 scipy==1.13.1
 statsmodels==0.14.2
