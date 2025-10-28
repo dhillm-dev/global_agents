@@ -1,11 +1,6 @@
 from fastapi import FastAPI
+from src.routers import health, flow
 
-app = FastAPI(title="Global Agents API")
-
-@app.get("/")
-def root():
-    return {"status": "ok"}
-
-@app.get("/health")
-def health():
-    return {"status": "healthy"}
+app = FastAPI()
+app.include_router(health.router)
+app.include_router(flow.router)

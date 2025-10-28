@@ -1,27 +1,19 @@
-# --- web / api ---
-fastapi==0.115.0
-uvicorn[standard]==0.30.6
-pydantic==2.9.2
+# web
+fastapi
+uvicorn
+aiohttp
+requests
+pydantic>=2
 
-# --- async / infra ---
-aiohttp==3.10.10
-websockets==13.1
-redis==5.0.1
-python-dotenv==1.0.1
-PyYAML==6.0.2
+# data
+numpy
+pandas
 
-# --- data / ml ---
-numpy==1.26.4
-pandas==2.2.3
-# Use PyPI pandas-ta (no git installs). 0.3.14b works on Linux.
-pandas-ta==0.3.14b
-scikit-learn==1.5.2
-scipy==1.13.1
-statsmodels==0.14.2
+# technicals (no git): tarball works without GitHub auth
+pandas-ta @ https://github.com/twopirllc/pandas-ta/archive/refs/tags/0.3.14b.tar.gz
 
-# --- brokers / bridges (optional) ---
-# MetaTrader5 has NO Linux wheels. Only install on Windows hosts:
-MetaTrader5==5.0.45; platform_system == "Windows"
+# config
+PyYAML
+python-dotenv
 
-# --- testing / dev (optional) ---
-pytest==8.3.3
+# DO NOT add MetaTrader5 here (Render Linux). Use guarded import at runtime.
