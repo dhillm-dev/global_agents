@@ -45,6 +45,33 @@ jobs:
         run: |
           curl -sSf http://127.0.0.1:8000/healthz | tee /dev/stderr
 
+      - name: Curl /flow/snapshot
+        run: |
+          curl -sSf "http://127.0.0.1:8000/flow/snapshot" | tee /dev/stderr
+
+      - name: Curl /alpha/hunter (POST)
+        run: |
+          curl -sSf -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"symbol":"EURUSD","timeframe":"1h"}' \
+            http://127.0.0.1:8000/alpha/hunter | tee /dev/stderr
+
+      - name: Curl /stock/scanner
+        run: |
+          curl -sSf "http://127.0.0.1:8000/stock/scanner?symbol=SPY&timeframe=1h" | tee /dev/stderr
+
+      - name: Curl /correl/score
+        run: |
+          curl -sSf "http://127.0.0.1:8000/correl/score?symbol=EURUSD&timeframe=1h" | tee /dev/stderr
+
+      - name: Install pytest
+        run: |
+          pip install pytest
+
+      - name: Run pytest
+        run: |
+          pytest -q
+
       - name: Verify MT5 guard returns None
         env:
           ENABLE_MT5: "0"
