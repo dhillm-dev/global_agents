@@ -1,10 +1,22 @@
 from fastapi import FastAPI
-from global_agents.api.routers import orchestrator
+from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI(title="global_agents")
-app.include_router(orchestrator.router)
+from global_agents.api.orchestrator import router as orchestrator_router
+
+app = FastAPI(title="Global Agents Hub")
+
+# (optional) CORS – handy for dashboards or cross-origin tools
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/healthz")
 def healthz():
     return {"ok": True}
+
+# orchestrator
+app.include_router(orchestrator_router)
