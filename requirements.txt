@@ -1,28 +1,27 @@
-fastapi==0.115.5
-uvicorn[standard]==0.30.6
-aiohttp>=3.9
-httpx>=0.24
-ta>=0.11
-pandas>=2.0
-numpy>=1.24
-pytest>=7.4
-aiohttp
-pydantic>=2
+# ---- web stack (compatible set for Render Python 3.11) ----
+fastapi==0.110.0
+starlette==0.37.2
+pydantic==2.6.4
+pydantic-core==2.16.3
+uvicorn[standard]==0.29.0
 requests==2.32.3
-pydantic>=2
 
-# persistence (optional)
+# ---- numerics / tools (safe for py3.11) ----
+numpy==1.26.4
+pandas==2.2.2
+python-dateutil==2.9.0.post0
+
+# Optional persistence
 redis==5.0.8
 
-# data
-numpy
-pandas
-
-# technicals (PyPI-hosted)
+# Indicators (use ta; avoid pandas-ta)
 ta==0.11.0
 
-# config
-PyYAML
-python-dotenv
+# ---- other libs used by the project ----
+aiohttp==3.10.5
+httpx==0.27.2
+PyYAML==6.0.2
+python-dotenv==1.0.1
+pytest==8.4.2
 
 # DO NOT add MetaTrader5 here (Render Linux). Use guarded import at runtime.
