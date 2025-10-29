@@ -64,6 +64,18 @@ jobs:
         run: |
           curl -sSf "http://127.0.0.1:8000/correl/score?symbol=EURUSD&timeframe=1h" | tee /dev/stderr
 
+      - name: Curl /stocks/smartfinder
+        run: |
+          curl -sSf "http://127.0.0.1:8000/stocks/smartfinder?symbol=PLTR&timeframe=1h&price=18.5" | tee /dev/stderr
+
+      - name: Curl /flow/anomaly
+        run: |
+          curl -sSf "http://127.0.0.1:8000/flow/anomaly?symbol=EURUSD&timeframe=1h" | tee /dev/stderr
+
+      - name: Curl /orchestrator/last_decision
+        run: |
+          curl -sSf "http://127.0.0.1:8000/orchestrator/last_decision" | tee /dev/stderr
+
       - name: Install pytest
         run: |
           pip install pytest

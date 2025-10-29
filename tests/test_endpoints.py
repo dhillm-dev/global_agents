@@ -57,3 +57,28 @@ def test_correl_score_peers_and_score():
     assert "score" in data and isinstance(data["score"], (int, float))
     assert "signal" in data and isinstance(data["signal"], (int, float))
     assert "confidence" in data and isinstance(data["confidence"], (int, float))
+
+
+def test_stocks_smartfinder():
+    r = client.get("/stocks/smartfinder", params={"symbol": "PLTR", "timeframe": "1h", "price": 18.5})
+    assert r.status_code == 200
+    data = r.json()
+    assert data["symbol"] == "PLTR"
+    assert "signal" in data and isinstance(data["signal"], (int, float))
+    assert "confidence" in data and isinstance(data["confidence"], (int, float))
+
+
+def test_flow_anomaly():
+    r = client.get("/flow/anomaly", params={"symbol": "EURUSD", "timeframe": "1h"})
+    assert r.status_code == 200
+    data = r.json()
+    assert data["symbol"] == "EURUSD"
+    assert "signal" in data and isinstance(data["signal"], (int, float))
+    assert "confidence" in data and isinstance(data["confidence"], (int, float))
+
+
+def test_orchestrator_last_decision():
+    r = client.get("/orchestrator/last_decision")
+    assert r.status_code == 200
+    data = r.json()
+    assert "last_decision" in data

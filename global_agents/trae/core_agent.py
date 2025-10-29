@@ -25,6 +25,8 @@ ENDPOINTS = {
     "FlowWatcher": "/flow/snapshot",
     "StockScanner": "/stock/scanner",
     "CorrelationAI": "/correl/score",
+    "SmartStockFinder": "/stocks/smartfinder",
+    "FlowAnomalyDetector": "/flow/anomaly",
 }
 
 DEFAULT_WEIGHTS = {
@@ -32,10 +34,13 @@ DEFAULT_WEIGHTS = {
     "FlowWatcher": 0.30,
     "StockScanner": 0.20,
     "CorrelationAI": 0.20,
+    "SmartStockFinder": 0.15,
+    "FlowAnomalyDetector": 0.15,
 }
 
 HALF_LIFE = int(os.getenv("GA_HALF_LIFE", "50"))
 MAX_RPM = 30  # requests per minute throttle
+BASE_RISK = float(os.getenv("GA_BASE_RISK", "1.0"))
 
 
 # ----------------------------
@@ -198,6 +203,8 @@ class Orchestrator:
         tasks.append(("FlowWatcher", asyncio.create_task(self._get(ENDPOINTS["FlowWatcher"], {"symbol": symbol, "timeframe": TF}))))
         tasks.append(("StockScanner", asyncio.create_task(self._get(ENDPOINTS["StockScanner"], {"symbol": symbol, "timeframe": TF}))))
         tasks.append(("CorrelationAI", asyncio.create_task(self._get(ENDPOINTS["CorrelationAI"], {"symbol": symbol, "timeframe": TF}))))
+        tasks.append(("SmartStockFinder", asyncio.create_task(self._get(ENDPOINTS["SmartStockFinder"], {"symbol": symbol, "timeframe": TF}))))
+        tasks.append(("FlowAnomalyDetector", asyncio.create_task(self._get(ENDPOINTS["FlowAnomalyDetector"], {"symbol": symbol, "timeframe": TF}))))
 
         results: Dict[str, Dict[str, Any]] = {}
         for name, task in tasks:
@@ -214,6 +221,9 @@ class Orchestrator:
         numer = 0.0
         denom = 0.0
         contribs: Dict[str, float] = {}
+        fad_conf = 0.0
+        fad_sig = 0.0
+        ssf_conf = 0.0
         for agent, data in agents.items():
             sig = to_minus1_plus1(float(data.get("signal", 0.0)))
             conf = float(data.get("confidence", 0.0))
@@ -222,8 +232,13 @@ class Orchestrator:
             contribs[agent] = c
             numer += c
             denom += wa
+            if agent == "FlowAnomalyDetector":
+                fad_conf = conf
+                fad_sig = sig
+            if agent == "SmartStockFinder":
+                ssf_conf = conf
         conviction = (numer / denom) if denom > 0 else 0.0
-        confidence = 0.55 + 0.45 * abs(conviction)
+        confidence = clamp(0.55 + 0.45 * abs(conviction), 0.0, 1.0)
         direction = "HOLD"
         if confidence < MIN_CONF:
             direction = "HOLD"
@@ -233,7 +248,16 @@ class Orchestrator:
             elif conviction < -0.35:
                 direction = "SELL"
 
-        expected_return = 0.02 * conviction  # simple proxy
+        # Dynamic risk sizing and hedge rule
+        risk = BASE_RISK * confidence * abs(conviction)
+        def _sgn(x: float) -> int:
+            return 1 if x > 0 else (-1 if x < 0 else 0)
+        if fad_conf > 0.8 and _sgn(conviction) != _sgn(fad_sig):
+            risk *= 0.5
+
+        # Expected return proxy leveraging SSF confidence
+        expected_return = conviction * 0.02 * (1.0 + ssf_conf)
+
         result = {
             "timestamp": utc_now(),
             "symbol": symbol,
@@ -241,6 +265,7 @@ class Orchestrator:
             "direction": direction,
             "conviction": round(conviction, 5),
             "confidence": round(confidence, 5),
+            "risk": round(risk, 5),
             "expected_return": round(expected_return, 5),
             "rationale": "Fusion of agents with adaptive weights",
             "agent_contributions": {k: round(v, 5) for k, v in contribs.items()},
@@ -254,14 +279,21 @@ class Orchestrator:
         self.mem.update_weights(fused.get("agent_contributions", {}), decision_dir, realized_dir)
         correct = (decision_dir == realized_dir and decision_dir != 0)
         self.mem.update_metrics(correct, fused.get("expected_return", 0.0), fused.get("confidence", 0.0), realized_move)
-        self.mem.log_outcome({
-            "symbol": fused["symbol"],
-            "tf": fused["timeframe"],
-            "decision": fused["direction"],
-            "realized_pnl": realized_move,
-            "agents": fused.get("agent_contributions", {}),
-            "ts": fused["timestamp"],
-        })
+        # Periodic decay every 50 samples
+        if self.mem.data["metrics"]["samples"] % 50 == 0:
+            for k in list(self.mem.weights.keys()):
+                self.mem.weights[k] *= 0.98
+            self.mem._renorm()
+
+        # Persist full last decision record with realized move
+        record = {
+            **fused,
+            "realized_move": realized_move,
+        }
+        # update memory fields and save
+        self.mem.log_outcome(record)
+        # also write last_decision for /orchestrator/last_decision
+        self.mem.data["last_decision"] = record
         self.mem.save()
 
 
