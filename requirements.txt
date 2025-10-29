@@ -11,6 +11,9 @@ pydantic>=2
 requests==2.32.3
 pydantic>=2
 
+# persistence (optional)
+redis==5.0.8
+
 # data
 numpy
 pandas
