@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, validator
 from typing import Optional, Literal, Dict, Any
 import time
 import os
@@ -36,8 +36,7 @@ class Decision(BaseModel):
     comment: Optional[str] = None
     tf: Optional[str] = None
 
-    @field_validator("symbol")
-    @classmethod
+    @validator("symbol")
     def must_have_symbol(cls, v: str) -> str:
         if not v or not v.strip():
             raise ValueError("symbol required")
@@ -54,13 +53,13 @@ def _set_last(envelope: DecisionEnvelope) -> None:
     # If Redis is configured, store there; otherwise store in memory
     if _REDIS is not None:
         try:
-            _REDIS.set("orchestrator:last", json.dumps(envelope.model_dump()))
+            _REDIS.set("orchestrator:last", json.dumps(envelope.dict()))
             _REDIS.set("orchestrator:last_updated", str(time.time()))
             return
         except Exception:
             # fall back to in-memory on error
             pass
-    _STATE["last"] = envelope.model_dump()
+    _STATE["last"] = envelope.dict()
     _STATE["last_updated"] = time.time()
 
 
