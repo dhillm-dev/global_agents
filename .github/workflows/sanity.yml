@@ -76,6 +76,14 @@ jobs:
         run: |
           curl -sSf "http://127.0.0.1:8000/orchestrator/last_decision" | tee /dev/stderr
 
+      - name: Curl /orchestrator/decision (POST) and /orchestrator/history
+        run: |
+          curl -sSf -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"timestamp":"2024-01-01T00:00:00Z","symbol":"EURUSD","timeframe":"1h","direction":"BUY","conviction":0.4,"confidence":0.8,"expected_return":0.01,"risk":0.004,"rationale":"CI","agent_contributions":{"AlphaHunter":0.2}}' \
+            http://127.0.0.1:8000/orchestrator/decision | tee /dev/stderr
+          curl -sSf "http://127.0.0.1:8000/orchestrator/history?limit=1" | tee /dev/stderr
+
       - name: Install pytest
         run: |
           pip install pytest

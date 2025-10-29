@@ -8,10 +8,27 @@ from pathlib import Path
 from typing import Dict, Any, List, Tuple, Optional
 
 
+def fuse_agents_once(symbol: str, tf: str) -> Optional[Dict[str, Any]]:
+    """
+    Demo fusion: return a small BUY decision so MT5 EA can trade.
+    Replace with real Alpha/Correl/Flow/Sentiment fusion as needed.
+    Return None to indicate FLAT (no trade).
+    """
+    return {
+        "action": "BUY",
+        "symbol": symbol,
+        "volume": 0.02,
+        "comment": f"demo-fuse {tf}",
+        # Optional risk fields EA may consume:
+        # "sl_points": 250,
+        # "tp_points": 500,
+    }
+
+
 # ----------------------------
 # Config
 # ----------------------------
-BASE_URL = os.getenv("GA_BASE_URL", "https://global-agents-jcjy.onrender.com").rstrip("/")
+BASE_URL = os.getenv("GA_BASE_URL", "https://global-agents-jciy.onrender.com").rstrip("/")
 SYMBOLS = [s.strip() for s in os.getenv("GA_SYMBOLS", "EURUSD,GBPUSD,SPY,BTCUSDT").split(",") if s.strip()]
 TF = os.getenv("GA_TIMEFRAME", "1h")
 CYCLE_S = int(os.getenv("GA_CYCLE_SECONDS", "600"))
@@ -40,7 +57,20 @@ DEFAULT_WEIGHTS = {
 
 HALF_LIFE = int(os.getenv("GA_HALF_LIFE", "50"))
 MAX_RPM = 30  # requests per minute throttle
-BASE_RISK = float(os.getenv("GA_BASE_RISK", "1.0"))
+BASE_RISK = float(os.getenv("GA_BASE_RISK", "0.01"))
+
+# Execution / Paper trading config
+BROKER_PROVIDER = os.getenv("BROKER_PROVIDER", "paper")
+TRADE_MODE = os.getenv("TRADE_MODE", "paper").lower()
+RISK_MAX_DAILY_DD = float(os.getenv("RISK_MAX_DAILY_DD", "0.05"))
+RISK_MAX_PER_TRADE = float(os.getenv("RISK_MAX_PER_TRADE", "0.02"))
+RISK_MAX_CONCURRENT = int(os.getenv("RISK_MAX_CONCURRENT", "3"))
+SYMBOL_FILTER = [s.strip() for s in os.getenv("SYMBOL_FILTER", ",".join(SYMBOLS)).split(",") if s.strip()]
+
+LEDGER_PATH = Path("data/paper_ledger.json")
+LEDGER_PATH.parent.mkdir(parents=True, exist_ok=True)
+TRADES_LOG = Path("logs/trades.jsonl")
+TRADES_LOG.parent.mkdir(parents=True, exist_ok=True)
 
 
 # ----------------------------
@@ -107,7 +137,21 @@ class Memory:
         self.data["history"] = self.data["history"][-5000:]
 
     def update_metrics(self, correct: bool, expected_ret: float, confidence: float, realized_ret: float):
-        m = self.data["metrics"]
+        # Ensure metrics defaults exist
+        m = self.data.setdefault("metrics", {
+            "win_rate": 0.0,
+            "avg_return": 0.0,
+            "weight_entropy": 0.0,
+            "conf_calibration": 0.0,
+            "variance": 0.0,
+            "samples": 0,
+        })
+        m.setdefault("win_rate", 0.0)
+        m.setdefault("avg_return", 0.0)
+        m.setdefault("weight_entropy", 0.0)
+        m.setdefault("conf_calibration", 0.0)
+        m.setdefault("variance", 0.0)
+        m.setdefault("samples", 0)
         n = m["samples"] + 1
         # Running averages
         m["win_rate"] = ((m["win_rate"] * m["samples"]) + (1.0 if correct else 0.0)) / n
@@ -296,6 +340,82 @@ class Orchestrator:
         self.mem.data["last_decision"] = record
         self.mem.save()
 
+    # ----------------------------
+    # Paper trading helpers
+    # ----------------------------
+    def _load_ledger(self) -> List[Dict[str, Any]]:
+        try:
+            if LEDGER_PATH.exists():
+                return json.loads(LEDGER_PATH.read_text())
+        except Exception:
+            pass
+        return []
+
+    def _save_ledger(self, ledger: List[Dict[str, Any]]):
+        try:
+            tmp = LEDGER_PATH.with_suffix(".tmp")
+            tmp.write_text(json.dumps(ledger, indent=2))
+            tmp.replace(LEDGER_PATH)
+        except Exception:
+            pass
+
+    def _count_open_trades(self, ledger: List[Dict[str, Any]]) -> int:
+        cnt = 0
+        for t in ledger:
+            if t.get("status") == "open":
+                cnt += 1
+        return cnt
+
+    def _pre_trade_checks(self, fused: Dict[str, Any]) -> bool:
+        if TRADE_MODE != "paper":
+            return False
+        if fused.get("direction") == "HOLD":
+            return False
+        if float(fused.get("confidence", 0.0)) < MIN_CONF:
+            return False
+        if float(fused.get("risk", 0.0)) > RISK_MAX_PER_TRADE:
+            return False
+        # Concurrency
+        ledger = self._load_ledger()
+        if self._count_open_trades(ledger) >= RISK_MAX_CONCURRENT:
+            return False
+        # Simple daily DD kill-switch using memory metrics avg_return as proxy
+        # In a real system, compute true daily PnL; here we keep it conservative.
+        dd_proxy = abs(self.mem.data.get("metrics", {}).get("avg_return", 0.0))
+        if dd_proxy >= RISK_MAX_DAILY_DD:
+            return False
+        return True
+
+    def _execute_paper_trade(self, fused: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        try:
+            side = "buy" if fused.get("direction") == "BUY" else "sell"
+            symbol = fused.get("symbol")
+            order = {
+                "symbol": symbol,
+                "side": side,
+                "qty": 10000,
+                "type": "market",
+                "sl": None,
+                "tp": None,
+                "ts": utc_now(),
+                "status": "open",
+            }
+            # Example SL/TP for EURUSD
+            if symbol == "EURUSD":
+                order["sl"] = 1.0725
+                order["tp"] = 1.0815
+            # Persist to ledger and log
+            ledger = self._load_ledger()
+            ledger.append(order)
+            self._save_ledger(ledger)
+            try:
+                TRADES_LOG.open("a", encoding="utf-8").write(json.dumps(order) + "\n")
+            except Exception:
+                pass
+            return order
+        except Exception:
+            return None
+
 
 async def run_once(symbols: List[str]) -> None:
     async with aiohttp.ClientSession() as session:
@@ -305,6 +425,14 @@ async def run_once(symbols: List[str]) -> None:
             agents = await orch.query_agents(sym)
             fused = orch.fuse(sym, agents)
             print(json.dumps(fused))
+            # POST fused decision to backend for dashboard/history
+            try:
+                await orch._post("/orchestrator/decision", fused)
+            except Exception:
+                pass
+            # Paper execution
+            if sym in SYMBOL_FILTER and orch._pre_trade_checks(fused):
+                orch._execute_paper_trade(fused)
             # dummy realized move proxy: small random drift around conviction
             realized_move = fused["conviction"] * 0.5
             orch.learn(fused, realized_move)
@@ -317,6 +445,7 @@ async def run_loop() -> None:
 
 
 def main() -> None:
+    global SYMBOLS, CYCLE_S
     import argparse
     p = argparse.ArgumentParser(description="Global Alpha Orchestrator (Trae)")
     p.add_argument("--once", action="store_true", help="Run one cycle then exit")
@@ -325,7 +454,6 @@ def main() -> None:
     args = p.parse_args()
 
     syms = [s.strip() for s in args.symbols.split(",") if s.strip()]
-    global SYMBOLS, CYCLE_S
     SYMBOLS = syms
     CYCLE_S = args.cycle
 

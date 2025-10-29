@@ -82,3 +82,33 @@ def test_orchestrator_last_decision():
     assert r.status_code == 200
     data = r.json()
     assert "last_decision" in data
+
+
+def test_orchestrator_decision_and_history():
+    sample = {
+        "timestamp": "2024-01-01T00:00:00Z",
+        "symbol": "EURUSD",
+        "timeframe": "1h",
+        "direction": "BUY",
+        "conviction": 0.5,
+        "confidence": 0.8,
+        "expected_return": 0.01,
+        "risk": 0.004,
+        "rationale": "Test",
+        "agent_contributions": {"AlphaHunter": 0.2}
+    }
+    r_post = client.post("/orchestrator/decision", json=sample)
+    assert r_post.status_code == 200
+    assert r_post.json().get("status") == "ok"
+
+    r_last = client.get("/orchestrator/last_decision")
+    assert r_last.status_code == 200
+    last = r_last.json().get("last_decision")
+    assert isinstance(last, dict)
+    assert last.get("symbol") == "EURUSD"
+
+    r_hist = client.get("/orchestrator/history", params={"limit": 1})
+    assert r_hist.status_code == 200
+    hist = r_hist.json().get("history")
+    assert isinstance(hist, list)
+    assert len(hist) >= 1
