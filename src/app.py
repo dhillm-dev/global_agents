@@ -1,6 +1,10 @@
 from fastapi import FastAPI
 from src.routers import health, flow
+from src.routers import alpha, stock, correl
 
 app = FastAPI()
 app.include_router(health.router)
 app.include_router(flow.router)
+app.include_router(alpha.router)
+app.include_router(stock.router)
+app.include_router(correl.router)
