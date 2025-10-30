@@ -4,19 +4,19 @@ param(
 
 Write-Host "Healthz:" -ForegroundColor Cyan
 try {
-  $h = Invoke-RestMethod -Method Get -Uri "$BaseUrl/api/ta_decision/healthz" -TimeoutSec 10
+  $h = Invoke-RestMethod -Method Get -Uri "$BaseUrl/healthz" -TimeoutSec 10
   $h | ConvertTo-Json -Depth 4
 } catch { Write-Host $_.Exception.Message -ForegroundColor Yellow }
 
-Write-Host "TA Decision:" -ForegroundColor Cyan
-$body = '{"symbol":"ETHUSD","tf":"H1","bars":300}'
+Write-Host "Flow Snapshot:" -ForegroundColor Cyan
 try {
-  $d = Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/ta_decision" -ContentType 'application/json' -Body $body -TimeoutSec 25
-  $d | ConvertTo-Json -Depth 6
+  $f = Invoke-RestMethod -Method Get -Uri "$BaseUrl/flow/snapshot" -TimeoutSec 10
+  $f | ConvertTo-Json -Depth 6
 } catch { Write-Host $_.Exception.Message -ForegroundColor Yellow }
 
-Write-Host "Run Once (GET):" -ForegroundColor Cyan
+Write-Host "Alpha Hunter:" -ForegroundColor Cyan
+$alphaBody = '{"symbol":"ETHUSD","timeframe":"1h"}'
 try {
-  $r = Invoke-RestMethod -Method Get -Uri "$BaseUrl/api/run_once?symbol=ETHUSD&tf=H1&bars=300" -TimeoutSec 25
-  $r | ConvertTo-Json -Depth 6
+  $a = Invoke-RestMethod -Method Post -Uri "$BaseUrl/alpha/hunter" -ContentType 'application/json' -Body $alphaBody -TimeoutSec 25
+  $a | ConvertTo-Json -Depth 6
 } catch { Write-Host $_.Exception.Message -ForegroundColor Yellow }
