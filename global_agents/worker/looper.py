@@ -1,29 +1,35 @@
 import os
 import time
+import json
 import requests
 
-API = os.getenv("API_BASE", "https://global-agents-jciy.onrender.com")
-UNIVERSE = os.getenv("UNIVERSE", "ETHUSD,EURUSD,GBPUSD,XAUUSD").split(",")
+API_BASE = os.getenv("API_BASE", "https://global-agents-jciy.onrender.com")
+UNIVERSE = [s.strip() for s in os.getenv("UNIVERSE", "ETHUSD,EURUSD,GBPUSD,XAUUSD").split(",") if s.strip()]
 TF = os.getenv("TF", "H1")
 COOLDOWN = int(os.getenv("COOLDOWN", "15"))
-TIMEOUT = int(os.getenv("HTTP_TIMEOUT", "20"))
+HTTP_TIMEOUT = int(os.getenv("HTTP_TIMEOUT", "20"))
 
 
-def run_once(sym: str):
-    r = requests.post(
-        f"{API}/orchestrator/run_once",
-        json={"symbol": sym, "tf": TF},
-        timeout=TIMEOUT,
-    )
+def run_once(symbol: str, tf: str) -> dict:
+    """
+    Calls orchestrator to compute 1 decision for (symbol, tf).
+    Expects the API to store the decision and/or return it.
+    """
+    url = f"{API_BASE}/orchestrator/run_once"
+    payload = {"symbol": symbol, "tf": tf}
+    r = requests.post(url, json=payload, timeout=HTTP_TIMEOUT)
     r.raise_for_status()
-    print("posted decision for", sym, r.json())
+    return r.json()
 
 
 if __name__ == "__main__":
+    print(f"[worker] starting with API_BASE={API_BASE} UNIVERSE={UNIVERSE} TF={TF} COOLDOWN={COOLDOWN}s")
     while True:
-        for s in UNIVERSE:
+        for sym in UNIVERSE:
             try:
-                run_once(s.strip())
+                res = run_once(sym, TF)
+                print(f"[worker] {sym}/{TF} → {json.dumps(res)}")
             except Exception as e:
-                print("run_once error:", s, e)
+                print(f"[worker][ERROR] {sym}/{TF}: {e}")
+            time.sleep(1)
         time.sleep(COOLDOWN)

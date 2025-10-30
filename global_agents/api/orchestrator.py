@@ -5,6 +5,7 @@ import time
 import os
 import json
 from global_agents.agents.alpha_hunter import compute_signal
+from global_agents.ta.fusion import ta_decide
 
 router = APIRouter(prefix="/orchestrator", tags=["orchestrator"])
 
@@ -101,30 +102,60 @@ def run_once(payload: Dict[str, Any]) -> Dict[str, Any]:
     symbol = (payload.get("symbol") or "ETHUSD").upper()
     tf = payload.get("tf") or "H1"
 
-    # Compute TA-based signal using AlphaHunter
-    sig = compute_signal(symbol, tf)
-    direction = sig.get("direction", "FLAT")
+    # Preferred: TA fusion decision (with yfinance candle fetch)
+    try:
+        d = ta_decide(symbol, tf)
+        side = d.action
+        if side == "NONE":
+            action: Action = "FLAT"
+            vol = None
+            sl = None
+            tp = None
+        else:
+            action = "BUY" if side == "BUY" else "SELL"
+            vol = d.volume
+            sl = d.sl
+            tp = d.tp
 
-    # Map to action with simple thresholds
-    action: Action
-    if direction == "BUY":
-        action = "BUY"
-    elif direction == "SELL":
-        action = "SELL"
-    else:
-        action = "FLAT"
+        comment = (
+            f"ta_fusion: price={d.meta.get('price'):.5f} rsi={d.meta.get('rsi'):.1f} "
+            f"trend={d.meta.get('trend')} slope={d.meta.get('slope'):.5f} atr={d.meta.get('atr'):.5f}"
+            if isinstance(d.meta, dict) and 'price' in d.meta else "ta_fusion"
+        )
 
-    # Default volume; future: size via risk management
-    vol = 0.02 if action in ("BUY", "SELL") else None
+        decision = Decision(
+            action=action,
+            symbol=symbol,
+            volume=vol,
+            sl=sl,
+            tp=tp,
+            tf=tf,
+            comment=comment,
+        )
+        env = DecisionEnvelope(ok=True, decision=decision)
+        _set_last(env)
+        return {"ok": True, "posted": _STATE["last"], "ta": {"meta": d.meta}}
+    except Exception as e:
+        # Fallback: deterministic AlphaHunter synthetic signal (no network)
+        sig = compute_signal(symbol, tf)
+        direction = sig.get("direction", "FLAT")
 
-    decision = Decision(
-        action=action,
-        symbol=symbol,
-        volume=vol,
-        tf=tf,
-        comment=f"alpha_hunter: {sig.get('rationale','')}"
-    )
+        action: Action
+        if direction == "BUY":
+            action = "BUY"
+        elif direction == "SELL":
+            action = "SELL"
+        else:
+            action = "FLAT"
 
-    env = DecisionEnvelope(ok=True, decision=decision)
-    _set_last(env)
-    return {"ok": True, "posted": _STATE["last"], "alpha": sig}
+        vol = 0.02 if action in ("BUY", "SELL") else None
+        decision = Decision(
+            action=action,
+            symbol=symbol,
+            volume=vol,
+            tf=tf,
+            comment=f"alpha_hunter: {sig.get('rationale','')} (fallback)"
+        )
+        env = DecisionEnvelope(ok=True, decision=decision)
+        _set_last(env)
+        return {"ok": True, "posted": _STATE["last"], "alpha": sig, "error": str(e)}
