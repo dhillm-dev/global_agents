@@ -2,7 +2,7 @@ fastapi==0.115.5
 pydantic==2.10.6
 uvicorn==0.30.6
 ta==0.11.0
-pandas==2.1.1
+pandas==2.2.2
 yfinance==0.2.43
 requests==2.32.3
 numpy==1.26.4

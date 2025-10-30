@@ -34,8 +34,14 @@ TF = os.getenv("GA_TIMEFRAME", "1h")
 CYCLE_S = int(os.getenv("GA_CYCLE_SECONDS", "600"))
 MIN_CONF = float(os.getenv("GA_MIN_CONFIDENCE", "0.40"))
 
-MEM_PATH = Path(os.getenv("GA_MEMORY_PATH", "global_agents/trae/_memory.json"))
-MEM_PATH.parent.mkdir(parents=True, exist_ok=True)
+TMP_DIR = Path(os.getenv("TMPDIR", "/tmp"))
+# Default memory path uses writable ephemeral /tmp on serverless platforms
+MEM_PATH = Path(os.getenv("GA_MEMORY_PATH", str(TMP_DIR / "global_agents" / "_memory.json")))
+try:
+    MEM_PATH.parent.mkdir(parents=True, exist_ok=True)
+except Exception:
+    # On some environments, directory creation may fail; writes will be skipped gracefully
+    pass
 
 ENDPOINTS = {
     "AlphaHunter": "/alpha/hunter",
@@ -67,10 +73,14 @@ RISK_MAX_PER_TRADE = float(os.getenv("RISK_MAX_PER_TRADE", "0.02"))
 RISK_MAX_CONCURRENT = int(os.getenv("RISK_MAX_CONCURRENT", "3"))
 SYMBOL_FILTER = [s.strip() for s in os.getenv("SYMBOL_FILTER", ",".join(SYMBOLS)).split(",") if s.strip()]
 
-LEDGER_PATH = Path("data/paper_ledger.json")
-LEDGER_PATH.parent.mkdir(parents=True, exist_ok=True)
-TRADES_LOG = Path("logs/trades.jsonl")
-TRADES_LOG.parent.mkdir(parents=True, exist_ok=True)
+# Persist paper ledger and trades log in /tmp by default
+LEDGER_PATH = Path(os.getenv("GA_LEDGER_PATH", str(TMP_DIR / "data" / "paper_ledger.json")))
+TRADES_LOG = Path(os.getenv("GA_TRADES_LOG", str(TMP_DIR / "logs" / "trades.jsonl")))
+for p in [LEDGER_PATH.parent, TRADES_LOG.parent]:
+    try:
+        p.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
 
 
 # ----------------------------
@@ -122,6 +132,11 @@ class Memory:
                 pass
 
     def save(self):
+        # Ensure parent directory exists before writing
+        try:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+        except Exception:
+            pass
         tmp = self.path.with_suffix(".tmp")
         tmp.write_text(json.dumps(self.data, indent=2))
         tmp.replace(self.path)

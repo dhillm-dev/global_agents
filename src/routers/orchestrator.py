@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Request, Query
+import os
 from global_agents.trae.core_agent import fuse_agents_once
 from pathlib import Path
 import json
@@ -9,9 +10,15 @@ from typing import Optional
 router = APIRouter()
 
 
-MEM_PATH = Path("global_agents/trae/_memory.json")
-LOG_DIR = Path("logs")
-LOG_DIR.mkdir(parents=True, exist_ok=True)
+TMP_DIR = Path(os.getenv("TMPDIR", "/tmp"))
+# Default to /tmp for writable storage on serverless platforms
+MEM_PATH = Path(os.getenv("GA_MEMORY_PATH", str(TMP_DIR / "global_agents" / "_memory.json")))
+LOG_DIR = Path(os.getenv("GA_LOG_DIR", str(TMP_DIR / "logs")))
+try:
+    MEM_PATH.parent.mkdir(parents=True, exist_ok=True)
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+except Exception:
+    pass
 
 
 @router.get("/orchestrator/last_decision")
@@ -63,6 +70,10 @@ async def orchestrator_set_last_decision(request: Request):
     mem["last_decision"] = decision
 
     # Persist safely
+    try:
+        MEM_PATH.parent.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
     tmp = MEM_PATH.with_suffix(".tmp")
     tmp.write_text(json.dumps(mem, indent=2))
     tmp.replace(MEM_PATH)
@@ -118,6 +129,10 @@ async def orchestrator_decision(request: Request):
     mem["last_decision"] = payload
 
     # Persist
+    try:
+        MEM_PATH.parent.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
     tmp = MEM_PATH.with_suffix(".tmp")
     tmp.write_text(json.dumps(mem, indent=2))
     tmp.replace(MEM_PATH)
@@ -172,6 +187,10 @@ async def orchestrator_run_once(request: Request):
         mem["history"].append(decision)
         mem["history"] = mem["history"][-5000:]
     mem["last_decision"] = decision
+    try:
+        MEM_PATH.parent.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
     tmp = MEM_PATH.with_suffix(".tmp")
     tmp.write_text(json.dumps(mem, indent=2))
     tmp.replace(MEM_PATH)
