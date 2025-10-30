@@ -2,6 +2,7 @@ from fastapi import FastAPI
 
 app = FastAPI()
 
-@app.get("/api/healthz")
+# In Vercel, the function file path is the base. Use root route.
+@app.get("/")
 def health_check():
     return {"ok": True}
