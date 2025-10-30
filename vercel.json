@@ -20,5 +20,20 @@
       "path": "/api/run_once",
       "schedule": "*/15 * * * *"
     }
+  ],
+  "excludeFiles": [
+    "**/*.pyc",
+    "**/__pycache__/**",
+    ".git/**",
+    ".venv/**",
+    "global_agents/**",
+    "src/**",
+    "workers/**",
+    "logs/**",
+    "data/**",
+    "static/**",
+    "tests/**",
+    "README.md",
+    "Dockerfile"
   ]
 }
