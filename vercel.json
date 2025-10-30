@@ -1,4 +1,10 @@
 {
+  "builds": [
+    {"src": "api/ta_decision.py", "use": "@vercel/python"},
+    {"src": "api/run_once.py", "use": "@vercel/python"},
+    {"src": "api/last_decision.py", "use": "@vercel/python"},
+    {"src": "api/healthz.py", "use": "@vercel/python"}
+  ],
   "functions": {
     "api/**/*.py": {
       "maxDuration": 10,
@@ -6,6 +12,10 @@
     }
   },
   "routes": [
+    {"src": "/api/ta_decision", "dest": "api/ta_decision.py"},
+    {"src": "/api/run_once", "dest": "api/run_once.py"},
+    {"src": "/api/last_decision", "dest": "api/last_decision.py"},
+    {"src": "/api/healthz", "dest": "api/healthz.py"},
     {
       "src": "/api/(.*)",
       "headers": {
