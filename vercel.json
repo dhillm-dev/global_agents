@@ -1,10 +1,12 @@
 {
   "builds": [
+    { "src": "api/index.py", "use": "@vercel/python" },
     { "src": "api/healthz.py", "use": "@vercel/python" },
     { "src": "api/ta_decision.py", "use": "@vercel/python" },
     { "src": "api/run_once.py", "use": "@vercel/python" }
   ],
   "routes": [
+    { "src": "/(.*)", "dest": "api/index.py" },
     { "src": "/api/healthz", "dest": "api/healthz.py" },
     { "src": "/api/ta_decision", "dest": "api/ta_decision.py" },
     { "src": "/api/run_once", "dest": "api/run_once.py" }
