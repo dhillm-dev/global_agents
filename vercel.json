@@ -1,4 +1,18 @@
 {
+  "version": 2,
+  "builds": [
+    { "src": "api/healthz.py", "use": "@vercel/python" },
+    { "src": "api/ta_decision.py", "use": "@vercel/python" },
+    { "src": "api/run_once.py", "use": "@vercel/python" },
+    { "src": "api/last_decision.py", "use": "@vercel/python" }
+  ],
+  "routes": [
+    { "src": "/api/healthz", "dest": "api/healthz.py" },
+    { "src": "/api/ta_decision", "dest": "api/ta_decision.py" },
+    { "src": "/api/ta_decision/healthz", "dest": "api/ta_decision.py" },
+    { "src": "/api/run_once", "dest": "api/run_once.py" },
+    { "src": "/api/last_decision", "dest": "api/last_decision.py" }
+  ],
   "functions": {
     "api/**/*.py": {
       "runtime": "python3.11",
@@ -6,7 +20,6 @@
       "memory": 1024
     }
   },
-  "routes": [],
   "excludeFiles": [
     "**/*.pyc",
     "**/__pycache__/**",
