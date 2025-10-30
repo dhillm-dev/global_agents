@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
-app = FastAPI(title="Healthz")
+app = FastAPI()
 
-@app.get("/")
-def health():
+@app.get("/api/healthz")
+def healthz():
     return {"ok": True}
