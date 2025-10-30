@@ -1,0 +1,177 @@
+{
+  "weights": {
+    "AlphaHunter": 0.23036222806712256,
+    "FlowWatcher": 0.23607398666633522,
+    "StockScanner": 0.15521228924000055,
+    "CorrelationAI": 0.15344686196185556,
+    "SmartStockFinder": 0.11677735169641208,
+    "FlowAnomalyDetector": 0.10812728236827399
+  },
+  "history": [
+    {
+      "timestamp": "2024-01-01T00:00:00Z",
+      "symbol": "EURUSD",
+      "timeframe": "1h",
+      "direction": "BUY",
+      "conviction": 0.5,
+      "confidence": 0.8,
+      "expected_return": 0.01,
+      "risk": 0.004,
+      "rationale": "Test",
+      "agent_contributions": {
+        "AlphaHunter": 0.2
+      }
+    },
+    {
+      "timestamp": "2025-10-29T14:06:50Z",
+      "symbol": "EURUSD",
+      "timeframe": "1h",
+      "direction": "HOLD",
+      "conviction": 0.0,
+      "confidence": 0.55,
+      "risk": 0.0,
+      "expected_return": 0.0,
+      "rationale": "Fusion of agents with adaptive weights",
+      "agent_contributions": {},
+      "realized_move": 0.0
+    },
+    {
+      "timestamp": "2025-10-29T14:07:06Z",
+      "symbol": "GBPUSD",
+      "timeframe": "1h",
+      "direction": "HOLD",
+      "conviction": 0.05341,
+      "confidence": 0.57403,
+      "risk": 0.00031,
+      "expected_return": 0.00128,
+      "rationale": "Fusion of agents with adaptive weights",
+      "agent_contributions": {
+        "AlphaHunter": -0.07165,
+        "FlowWatcher": 0.0,
+        "StockScanner": 0.02431,
+        "CorrelationAI": -0.01303,
+        "SmartStockFinder": 0.0,
+        "FlowAnomalyDetector": 0.11378
+      },
+      "realized_move": 0.026705
+    },
+    {
+      "timestamp": "2025-10-29T14:07:06Z",
+      "symbol": "SPY",
+      "timeframe": "1h",
+      "direction": "HOLD",
+      "conviction": 0.03364,
+      "confidence": 0.56514,
+      "risk": 0.00019,
+      "expected_return": 0.00131,
+      "rationale": "Fusion of agents with adaptive weights",
+      "agent_contributions": {
+        "AlphaHunter": 0.01884,
+        "FlowWatcher": 0.0,
+        "StockScanner": 0.01976,
+        "CorrelationAI": -0.03643,
+        "SmartStockFinder": -0.01323,
+        "FlowAnomalyDetector": 0.04471
+      },
+      "realized_move": 0.01682
+    },
+    {
+      "timestamp": "2025-10-29T14:07:06Z",
+      "symbol": "BTCUSDT",
+      "timeframe": "1h",
+      "direction": "HOLD",
+      "conviction": 0.03509,
+      "confidence": 0.56579,
+      "risk": 0.0002,
+      "expected_return": 0.0013,
+      "rationale": "Fusion of agents with adaptive weights",
+      "agent_contributions": {
+        "AlphaHunter": -0.02534,
+        "FlowWatcher": 0.0,
+        "StockScanner": 0.0,
+        "CorrelationAI": 0.0302,
+        "SmartStockFinder": -0.01224,
+        "FlowAnomalyDetector": 0.04246
+      },
+      "realized_move": 0.017545
+    },
+    {
+      "direction": "BUY",
+      "risk": 0.015,
+      "agent_contributions": {
+        "risk": 0.8,
+        "alpha": 0.6
+      },
+      "expected_return": 0.03,
+      "symbol": "TEST",
+      "conviction": 0.65,
+      "timeframe": "1h",
+      "rationale": "Smoke test decision",
+      "confidence": 0.72
+    },
+    {
+      "action": "BUY",
+      "symbol": "ETHUSD",
+      "volume": "0.02"
+    },
+    {
+      "timestamp": "2025-10-29T21:20:21Z",
+      "symbol": "ETHUSD",
+      "timeframe": "H1",
+      "direction": "BUY",
+      "conviction": 0.5,
+      "confidence": 0.6,
+      "risk": 0.01,
+      "expected_return": 0.02,
+      "rationale": "run_once synthetic decision",
+      "agent_contributions": {
+        "AlphaHunter": 0.2,
+        "RiskGuard": 0.8
+      }
+    },
+    {
+      "action": "BUY",
+      "symbol": "ETHUSD",
+      "volume": 0.02,
+      "comment": "demo-fuse H1"
+    },
+    {
+      "action": "BUY",
+      "symbol": "ETHUSD",
+      "volume": 0.02,
+      "comment": "demo-fuse H1"
+    },
+    {
+      "action": "BUY",
+      "symbol": "EURUSD",
+      "volume": 0.02,
+      "comment": "demo-fuse H1"
+    },
+    {
+      "action": "BUY",
+      "symbol": "ETHUSD",
+      "volume": 0.02,
+      "comment": "demo-fuse H1"
+    },
+    {
+      "action": "BUY",
+      "symbol": "EURUSD",
+      "volume": 0.02,
+      "comment": "demo-fuse H1"
+    }
+  ],
+  "metrics": {
+    "win_rate": 0.0,
+    "avg_return": 0.0152675,
+    "weight_entropy": 1.7470706183598255,
+    "conf_calibration": 0.43626,
+    "variance": 0.004485416666666667,
+    "samples": 4
+  },
+  "last_decision": {
+    "action": "BUY",
+    "symbol": "EURUSD",
+    "volume": 0.02,
+    "comment": "demo-fuse H1"
+  }
+}

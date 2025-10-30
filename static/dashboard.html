@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trae Dashboard</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 24px; background: #0b0f1a; color: #e7eef8; }
+    h1 { margin: 0 0 16px 0; font-size: 22px; }
+    .card { background: #131a2a; border: 1px solid #22304a; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+    .label { color: #9db4d1; font-size: 12px; }
+    .value { font-weight: 600; }
+    pre { background: #0d1320; border: 1px solid #1c2940; padding: 12px; border-radius: 6px; overflow: auto; }
+    .ok { color: #59d185; } .warn { color: #ffd166; } .err { color: #ef476f; }
+    a { color: #8ecae6; }
+  </style>
+</head>
+<body>
+  <h1>Trae — Global Alpha Orchestrator</h1>
+
+  <div class="card" id="status">
+    <div class="grid">
+      <div><div class="label">Timestamp</div><div class="value" id="ts">—</div></div>
+      <div><div class="label">Symbol</div><div class="value" id="symbol">—</div></div>
+      <div><div class="label">Timeframe</div><div class="value" id="tf">—</div></div>
+      <div><div class="label">Direction</div><div class="value" id="direction">—</div></div>
+      <div><div class="label">Conviction</div><div class="value" id="conviction">—</div></div>
+      <div><div class="label">Confidence</div><div class="value" id="confidence">—</div></div>
+      <div><div class="label">Expected Return</div><div class="value" id="expected">—</div></div>
+      <div><div class="label">Risk</div><div class="value" id="risk">—</div></div>
+    </div>
+    <p class="label">Rationale</p>
+    <div id="rationale">—</div>
+  </div>
+
+  <div class="card">
+    <p class="label">Agent Contributions</p>
+    <pre id="contrib">{}</pre>
+  </div>
+
+  <div class="card">
+    <div class="grid">
+      <div><div class="label">API</div>
+        <div class="value"><a href="/orchestrator/last_decision" target="_blank">/orchestrator/last_decision</a></div>
+      </div>
+      <div><div class="label">History</div>
+        <div class="value"><a href="/orchestrator/history?limit=50" target="_blank">/orchestrator/history?limit=50</a></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="label">Recent History</p>
+    <pre id="history">[]</pre>
+  </div>
+
+  <script>
+    async function fetchJSON(url) {
+      const r = await fetch(url);
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.json();
+    }
+
+    function setText(id, val) {
+      document.getElementById(id).textContent = val;
+    }
+
+    function fmtNum(x) {
+      if (x === null || x === undefined) return "—";
+      const n = Number(x);
+      if (!Number.isFinite(n)) return String(x);
+      return Math.round(n * 10000) / 10000; // 4 dp
+    }
+
+    async function refresh() {
+      try {
+        const last = await fetchJSON('/orchestrator/last_decision');
+        const d = last.last_decision;
+        if (d) {
+          setText('ts', d.timestamp || '—');
+          setText('symbol', d.symbol || '—');
+          setText('tf', d.timeframe || '—');
+          setText('direction', d.direction || '—');
+          setText('conviction', fmtNum(d.conviction));
+          setText('confidence', fmtNum(d.confidence));
+          setText('expected', fmtNum(d.expected_return));
+          setText('risk', fmtNum(d.risk));
+          setText('rationale', d.rationale || '—');
+          document.getElementById('contrib').textContent = JSON.stringify(d.agent_contributions || {}, null, 2);
+        }
+      } catch (e) {
+        console.warn('last_decision fetch failed', e);
+      }
+
+      try {
+        const hist = await fetchJSON('/orchestrator/history?limit=50');
+        document.getElementById('history').textContent = JSON.stringify(hist.history || [], null, 2);
+      } catch (e) {
+        console.warn('history fetch failed', e);
+      }
+    }
+
+    refresh();
+    setInterval(refresh, 5000);
+  </script>
+</body>
+</html>
