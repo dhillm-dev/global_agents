@@ -4,6 +4,7 @@ from typing import Optional, Literal, Dict, Any
 import time
 import os
 import json
+from global_agents.agents.alpha_hunter import compute_signal
 
 router = APIRouter(prefix="/orchestrator", tags=["orchestrator"])
 
@@ -100,10 +101,30 @@ def run_once(payload: Dict[str, Any]) -> Dict[str, Any]:
     symbol = (payload.get("symbol") or "ETHUSD").upper()
     tf = payload.get("tf") or "H1"
 
-    # --- TODO: plug in your real agent fusion ---
-    # For now, make a harmless FLAT or small BUY for proof-of-pipe.
-    decision = Decision(action="BUY", symbol=symbol, volume=0.02, tf=tf, comment="stub")
+    # Compute TA-based signal using AlphaHunter
+    sig = compute_signal(symbol, tf)
+    direction = sig.get("direction", "FLAT")
+
+    # Map to action with simple thresholds
+    action: Action
+    if direction == "BUY":
+        action = "BUY"
+    elif direction == "SELL":
+        action = "SELL"
+    else:
+        action = "FLAT"
+
+    # Default volume; future: size via risk management
+    vol = 0.02 if action in ("BUY", "SELL") else None
+
+    decision = Decision(
+        action=action,
+        symbol=symbol,
+        volume=vol,
+        tf=tf,
+        comment=f"alpha_hunter: {sig.get('rationale','')}"
+    )
 
     env = DecisionEnvelope(ok=True, decision=decision)
     _set_last(env)
-    return {"ok": True, "posted": _STATE["last"]}
+    return {"ok": True, "posted": _STATE["last"], "alpha": sig}
