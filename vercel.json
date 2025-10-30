@@ -1,10 +1,4 @@
 {
-  "builds": [
-    {"src": "api/ta_decision.py", "use": "@vercel/python"},
-    {"src": "api/run_once.py", "use": "@vercel/python"},
-    {"src": "api/last_decision.py", "use": "@vercel/python"},
-    {"src": "api/healthz.py", "use": "@vercel/python"}
-  ],
   "functions": {
     "api/**/*.py": {
       "runtime": "python3.11",
@@ -12,26 +6,7 @@
       "memory": 1024
     }
   },
-  "routes": [
-    {"src": "/api/ta_decision", "dest": "api/ta_decision.py"},
-    {"src": "/api/run_once", "dest": "api/run_once.py"},
-    {"src": "/api/last_decision", "dest": "api/last_decision.py"},
-    {"src": "/api/healthz", "dest": "api/healthz.py"},
-    {
-      "src": "/api/(.*)",
-      "headers": {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type"
-      }
-    }
-  ],
-  "crons": [
-    {
-      "path": "/api/run_once",
-      "schedule": "*/15 * * * *"
-    }
-  ],
+  "routes": [],
   "excludeFiles": [
     "**/*.pyc",
     "**/__pycache__/**",
